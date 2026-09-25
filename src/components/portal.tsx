@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   Plus,
   Search,
+  BellRing,
 } from "lucide-react";
 import { errorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
@@ -22,13 +23,14 @@ import {
   type Security,
 } from "@/lib/types";
 import { ArticleEditor } from "./article-editor";
+import { MarketRecaps } from "./market-recaps";
 
 type Row = Article & {
   news_article_sources: Article["sources"];
   news_article_categories: { category_id: string }[];
   news_article_securities: { security_id: string }[];
 };
-type Screen = "articles" | "edit" | "sources" | "users" | "audit";
+type Screen = "articles" | "edit" | "recaps" | "sources" | "users" | "audit";
 export function Portal() {
   const [identity, setIdentity] = useState<{
     id: string;
@@ -324,6 +326,13 @@ export function Portal() {
             <Library size={17} />
             Sources
           </button>
+          <button
+            aria-current={screen === "recaps" ? "page" : undefined}
+            onClick={() => void navigate("recaps")}
+          >
+            <BellRing size={17} />
+            Market recaps
+          </button>
           {identity.role === "admin" && (
             <>
               <p className="nav-caption">ADMINISTRATION</p>
@@ -538,6 +547,7 @@ export function Portal() {
               onSaved={() => void navigate("articles")}
             />
           )}
+          {screen === "recaps" && <MarketRecaps writable={writable} />}
           {screen === "sources" && (
             <>
               <div className="page-heading">

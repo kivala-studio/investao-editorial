@@ -731,3 +731,133 @@ dialog.modal {
 dialog.modal::backdrop {
   background: #14271f55;
 }
+.recap-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.recap-queue {
+  display: grid;
+  gap: 8px;
+}
+.recap-queue button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  text-align: left;
+  background: var(--surface, #fff);
+  border: 1px solid #dfe3e7;
+  border-radius: 12px;
+  color: inherit;
+}
+.recap-queue button.selected {
+  border-color: #2663a0;
+  box-shadow: 0 0 0 2px #dcecff;
+}
+.recap-queue span {
+  font-size: 12px;
+  color: #637080;
+}
+.recap-detail {
+  min-width: 0;
+  display: grid;
+  gap: 15px;
+}
+.recap-detail h2,
+.recap-detail h3,
+.recap-detail p {
+  margin: 0;
+}
+.recap-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.recap-facts div,
+.recap-review,
+.recap-preview,
+.recap-push {
+  border: 1px solid #dfe3e7;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fff;
+}
+.recap-facts small,
+.recap-facts strong {
+  display: block;
+}
+.recap-facts small {
+  color: #637080;
+  margin-bottom: 8px;
+}
+.recap-facts strong {
+  font-size: 20px;
+}
+.recap-review,
+.recap-preview {
+  display: grid;
+  gap: 14px;
+}
+.recap-review label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+.recap-review input:not([type="checkbox"]),
+.recap-review textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd2da;
+  border-radius: 8px;
+  font: inherit;
+}
+.recap-review textarea {
+  min-height: 75px;
+}
+.recap-review .checkbox {
+  display: flex;
+  align-items: start;
+  font-weight: 400;
+}
+.recap-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.recap-detail .table-wrap {
+  overflow-x: auto;
+}
+.recap-detail table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.recap-detail th,
+.recap-detail td {
+  padding: 9px;
+  text-align: left;
+  border-bottom: 1px solid #e8ebef;
+  white-space: nowrap;
+}
+.recap-preview pre {
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.55;
+  max-height: 500px;
+  overflow: auto;
+}
+@media (max-width: 850px) {
+  .recap-layout {
+    grid-template-columns: 1fr;
+  }
+  .recap-queue {
+    display: flex;
+    overflow-x: auto;
+  }
+  .recap-facts,
+  .recap-fields {
+    grid-template-columns: 1fr;
+  }
+}

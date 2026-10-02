@@ -20,6 +20,14 @@ export function Preview({
           .map((c) => c.name)
           .join(" · ") || "Article preview"}
       </p>
+      {article.recap_period && (
+        <p className="notice">
+          Relatório histórico · {article.period_start || "…"} a{" "}
+          {article.period_end || "…"} · Sessão de referência:{" "}
+          {article.reference_session || "…"}. Dados do período; não são cotações
+          actuais.
+        </p>
+      )}
       <h1>{article.title || "Untitled article"}</h1>
       <p className="lede">{article.summary || "Your summary appears here."}</p>
       <p className="muted">

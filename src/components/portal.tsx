@@ -22,6 +22,7 @@ import {
   type Role,
   type Security,
 } from "@/lib/types";
+import { PeriodRecaps } from "./period-recaps";
 import { ArticleEditor } from "./article-editor";
 import { MarketRecaps } from "./market-recaps";
 
@@ -539,15 +540,32 @@ export function Portal() {
             <ArticleEditor
               key={`${article.id ?? "new"}-${editorVersion}`}
               initial={article}
-              writable={writable}
+              writable={
+                writable &&
+                !(article.recap_period && article.status !== "draft")
+              }
               categories={categories}
               sources={sources}
               securities={securities}
               addSource={addSource}
-              onSaved={() => void navigate("articles")}
+              onSaved={() =>
+                void navigate(article.recap_period ? "recaps" : "articles")
+              }
             />
           )}
-          {screen === "recaps" && <MarketRecaps writable={writable} />}
+          {screen === "recaps" && (
+            <>
+              <PeriodRecaps
+                writable={writable}
+                onOpen={(value) => {
+                  setArticle(value);
+                  setEditorVersion((version) => version + 1);
+                  void navigate("edit");
+                }}
+              />
+              <MarketRecaps writable={writable} />
+            </>
+          )}
           {screen === "sources" && (
             <>
               <div className="page-heading">

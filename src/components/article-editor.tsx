@@ -231,21 +231,23 @@ export function ArticleEditor({
                     />
                   </label>
                   <label>
-                    Sessão de referência
+                    Sessão de referência (opcional)
                     <input
                       type="date"
                       min={article.period_start ?? undefined}
                       max={article.period_end ?? undefined}
                       value={article.reference_session ?? ""}
                       onChange={(e) =>
-                        patch({ reference_session: e.target.value })
+                        patch({ reference_session: e.target.value || null })
                       }
                     />
                   </label>
                 </div>
                 <p className="small muted">
                   Semana: segunda a domingo. Mês e ano: período civil completo.
-                  A sessão deve pertencer ao período.
+                  Deixe a sessão em branco quando a fonte apenas apresentar
+                  dados agregados. Só indique uma sessão comprovada pela fonte,
+                  dentro do período.
                 </p>
               </>
             )}

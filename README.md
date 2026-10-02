@@ -107,7 +107,7 @@ They create and remove local test accounts and never use production credentials.
 
 Market recaps now includes **Criar recap por período** alongside the existing
 verified daily sessions. Select weekly (Monday–Sunday), monthly, or annual civil
-periods, set start/end and a reference-session date within the period, then write
+periods, set start/end and optionally a source-supported reference-session date within the period, then write
 or import Markdown and attach existing sources. Save draft first; publication
 requires the existing source/content checks and an explicit confirmation.
 Only completed periods can be published. Published period reports open read-only.
@@ -123,5 +123,10 @@ candidate, quote, or push-delivery pipelines.
 `tests/fixtures/august-2026.md` is an editorial demonstration imported from Library;
 local integration tests leave August in draft and test publication with a separate
 synthetic report. Run `INVESTAO_BACKEND_DIR=/path/to/backend npm run test:integration`
-only with a local Supabase stack containing the migration. The reference-session
-date is editor supplied; it is not an assertion of verified closing prices.
+only with a local Supabase stack containing the migration. Leave the reference session blank for aggregate source reports. They display an explicit
+aggregate-period basis without implying a trading session. A supplied reference date
+is editor supplied; it is not an assertion of verified closing prices.
+
+This correction requires backend migration `20261002123516_optional_period_reference_session.sql`
+before releasing the updated portal. Daily session recaps retain their existing verified
+trading dates.

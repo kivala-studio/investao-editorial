@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { emptyArticle } from "./types";
-import { periodErrors } from "./periods";
+import { periodErrors, periodBasis } from "./periods";
 const monthly = {
   ...emptyArticle(),
   recap_period: "monthly" as const,
@@ -56,4 +56,18 @@ test("civil week, leap year and incomplete annual publication", () => {
   };
   expect(periodErrors(annual, "draft")).toEqual([]);
   expect(periodErrors(annual, "published", "2026-10-02")).toHaveLength(1);
+});
+
+test("aggregated August does not assert a trading session", () => {
+  for (const reference_session of [null, undefined, ""]) {
+    const article = { ...monthly, reference_session };
+    expect(periodErrors(article, "draft")).toEqual([]);
+    expect(periodErrors(article, "published", "2026-10-02")).toEqual([]);
+    expect(periodBasis(article)).toBe(
+      "Base agregada mensal; sem sessão específica",
+    );
+  }
+  expect(
+    periodErrors({ ...monthly, reference_session: "2026-02-30" }, "draft"),
+  ).toHaveLength(1);
 });

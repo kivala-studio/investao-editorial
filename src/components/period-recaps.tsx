@@ -1,4 +1,5 @@
 "use client";
+import { periodBasis } from "@/lib/periods";
 import { useCallback, useEffect, useState } from "react";
 import { articleSelect, emptyArticle, type Article } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
@@ -58,7 +59,7 @@ export function PeriodRecaps({
                 recap_period: "monthly",
                 period_start: "",
                 period_end: "",
-                reference_session: "",
+                reference_session: null,
               })
             }
           >
@@ -77,7 +78,7 @@ export function PeriodRecaps({
             <tr>
               <th>Relatório histórico</th>
               <th>Período</th>
-              <th>Sessão de referência</th>
+              <th>Base dos dados</th>
               <th>Estado</th>
             </tr>
           </thead>
@@ -90,7 +91,10 @@ export function PeriodRecaps({
                     onClick={() =>
                       onOpen({
                         ...row,
-                        sources: row.news_article_sources,
+                        sources: row.news_article_sources.map((source) => ({
+                          ...source,
+                          source_title: source.source_title ?? "",
+                        })),
                         category_ids: row.news_article_categories.map(
                           (c) => c.category_id,
                         ),
@@ -106,7 +110,7 @@ export function PeriodRecaps({
                 <td>
                   {row.recap_period} · {row.period_start} a {row.period_end}
                 </td>
-                <td>{row.reference_session}</td>
+                <td>{periodBasis(row)}</td>
                 <td>
                   <span className={`badge ${row.status}`}>{row.status}</span>
                 </td>

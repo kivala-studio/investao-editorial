@@ -1,3 +1,4 @@
+import { periodBasis } from "@/lib/periods";
 import Markdown from "react-markdown";
 import type { Article, Reference, Security } from "@/lib/types";
 import { normalizeMarkdown, safeURL } from "@/lib/markdown";
@@ -23,9 +24,8 @@ export function Preview({
       {article.recap_period && (
         <p className="notice">
           Relatório histórico · {article.period_start || "…"} a{" "}
-          {article.period_end || "…"} · Sessão de referência:{" "}
-          {article.reference_session || "…"}. Dados do período; não são cotações
-          actuais.
+          {article.period_end || "…"} · {periodBasis(article)}. Dados do
+          período; não são cotações actuais.
         </p>
       )}
       <h1>{article.title || "Untitled article"}</h1>

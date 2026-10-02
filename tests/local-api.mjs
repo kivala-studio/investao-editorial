@@ -209,7 +209,7 @@ try {
     recap_period: "monthly",
     period_start: "2026-08-01",
     period_end: "2026-08-31",
-    reference_session: "2026-08-31",
+    reference_session: null,
   };
   const periodPath = `/rest/v1/news_articles?id=eq.${periodDocument.id}&select=*,news_article_sources(*)`;
   const readPeriod = async () =>
@@ -223,7 +223,14 @@ try {
     "period draft remains private",
   );
   let period = await readPeriod();
+  assert.equal(period.reference_session, null);
   assert.equal(period.recap_period, "monthly");
+  assert.equal(period.reference_session, null);
+  assert.match(
+    period.body_markdown,
+    /Base agregada mensal; sem sessão específica/,
+  );
+  assert.doesNotMatch(period.body_markdown, /Sessão de referência:/);
   assert.equal(period.news_article_sources.length, 1);
   assert.match(period.body_markdown, /Relatório histórico/);
   assert.match(period.body_markdown, /2026-08-01 a 2026-08-31/);
@@ -234,6 +241,7 @@ try {
         {
           ...periodDocument,
           body_markdown: period.body_markdown + "\n\nEdited draft",
+          reference_session: "",
         },
         period.revision,
       )

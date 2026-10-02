@@ -102,3 +102,26 @@ INVESTAO_BACKEND_DIR=/absolute/path/to/investao-functions npm run test:integrati
 If the variable is omitted, tests look for a sibling `investao-functions` checkout.
 They obtain credentials from its local CLI status and reject non-loopback endpoints.
 They create and remove local test accounts and never use production credentials.
+
+## Period market recaps
+
+Market recaps now includes **Criar recap por período** alongside the existing
+verified daily sessions. Select weekly (Monday–Sunday), monthly, or annual civil
+periods, set start/end and a reference-session date within the period, then write
+or import Markdown and attach existing sources. Save draft first; publication
+requires the existing source/content checks and an explicit confirmation.
+Only completed periods can be published. Published period reports open read-only.
+
+Deploy backend migration `20261002120000_period_market_recaps.sql` before releasing
+this portal. It adds nullable metadata to `news_articles` without modifying existing
+articles, and reuses article RLS, audit and revision protection. A unique index
+prevents duplicate reports for the same type/start date. Historical period and
+reference-session information is included in canonical Markdown so existing
+readers display it without an app update. These reports do not enter the daily
+candidate, quote, or push-delivery pipelines.
+
+`tests/fixtures/august-2026.md` is an editorial demonstration imported from Library;
+local integration tests leave August in draft and test publication with a separate
+synthetic report. Run `INVESTAO_BACKEND_DIR=/path/to/backend npm run test:integration`
+only with a local Supabase stack containing the migration. The reference-session
+date is editor supplied; it is not an assertion of verified closing prices.

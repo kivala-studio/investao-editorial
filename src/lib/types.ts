@@ -13,6 +13,10 @@ export type SourceLink = {
   is_primary: boolean;
 };
 export type Article = {
+  recap_period?: "weekly" | "monthly" | "annual" | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  reference_session?: string | null;
   id?: string;
   slug: string;
   title: string;

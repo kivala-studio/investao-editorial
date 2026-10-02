@@ -12,6 +12,7 @@ import {
 import { errorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 import type { Article, Reference, Security } from "@/lib/types";
+import { periodErrors } from "@/lib/periods";
 import { Preview } from "./preview";
 export function ArticleEditor({
   initial,
@@ -119,6 +120,13 @@ export function ArticleEditor({
       setError("Add a URL slug using lowercase letters, numbers and hyphens.");
       return;
     }
+    if (article.recap_period) {
+      const issues = periodErrors(article, status);
+      if (issues.length) {
+        setError(issues.join(" "));
+        return;
+      }
+    }
     const errors = status === "published" ? publicationErrors(article) : [];
     if (errors.length) {
       setError(errors.join(" "));
@@ -137,14 +145,17 @@ export function ArticleEditor({
     setError("");
     setConfirmation(null);
     try {
-      const { error } = await supabase().rpc("save_news_article", {
-        document: {
-          ...article,
-          body_markdown: normalizeMarkdown(article.body_markdown),
-          status,
+      const { error } = await supabase().rpc(
+        article.recap_period ? "save_period_market_recap" : "save_news_article",
+        {
+          document: {
+            ...article,
+            body_markdown: normalizeMarkdown(article.body_markdown),
+            status,
+          },
+          expected_revision: article.revision ?? null,
         },
-        expected_revision: article.revision ?? null,
-      });
+      );
       if (error) throw error;
       onSaved();
     } catch (reason) {
@@ -158,7 +169,15 @@ export function ArticleEditor({
       <div className="page-heading">
         <div>
           <p className="eyebrow">ARTICLE WORKSPACE</p>
-          <h1>{initial.id ? "Review article" : "Upload article"}</h1>
+          <h1>
+            {article.recap_period
+              ? initial.id
+                ? "Rever recap por período"
+                : "Criar recap por período"
+              : initial.id
+                ? "Review article"
+                : "Upload article"}
+          </h1>
           <p className="muted">
             Import Markdown, check the details, then publish.
           </p>
@@ -173,6 +192,63 @@ export function ArticleEditor({
       <div className="editor-grid">
         <section className="editor-panel">
           <fieldset disabled={!writable || busy}>
+            {article.recap_period && (
+              <>
+                <p className="notice">
+                  Relatório histórico. Os valores referem-se ao período indicado
+                  e não são cotações actuais. A publicação é uma ação separada.
+                </p>
+                <label>
+                  Periodicidade
+                  <select
+                    value={article.recap_period}
+                    onChange={(e) =>
+                      patch({
+                        recap_period: e.target.value as Article["recap_period"],
+                      })
+                    }
+                  >
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensal</option>
+                    <option value="annual">Anual</option>
+                  </select>
+                </label>
+                <div className="recap-fields">
+                  <label>
+                    Data de início
+                    <input
+                      type="date"
+                      value={article.period_start ?? ""}
+                      onChange={(e) => patch({ period_start: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Data de fim
+                    <input
+                      type="date"
+                      value={article.period_end ?? ""}
+                      onChange={(e) => patch({ period_end: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Sessão de referência
+                    <input
+                      type="date"
+                      min={article.period_start ?? undefined}
+                      max={article.period_end ?? undefined}
+                      value={article.reference_session ?? ""}
+                      onChange={(e) =>
+                        patch({ reference_session: e.target.value })
+                      }
+                    />
+                  </label>
+                </div>
+                <p className="small muted">
+                  Semana: segunda a domingo. Mês e ano: período civil completo.
+                  A sessão deve pertencer ao período.
+                </p>
+              </>
+            )}
             <label className="upload-zone">
               <Upload size={23} />
               <strong>{file || "Choose a Markdown file"}</strong>

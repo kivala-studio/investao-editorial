@@ -25,6 +25,8 @@ select {
   font: inherit;
 }
 button {
+  min-height: 44px;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -55,6 +57,7 @@ button:disabled {
 input,
 textarea,
 select {
+  min-width: 0;
   width: 100%;
   border: 1px solid #d7dfda;
   border-radius: 6px;
@@ -132,6 +135,7 @@ h3 {
   min-height: 100vh;
 }
 .sidebar {
+  overflow-y: auto;
   position: fixed;
   inset: 0 auto 0 0;
   width: 224px;
@@ -178,6 +182,7 @@ h3 {
   font-size: 12px;
 }
 .main {
+  min-width: 0;
   margin-left: 224px;
   width: calc(100% - 224px);
 }
@@ -264,6 +269,8 @@ h3 {
   font-size: 12px;
 }
 .table-wrap {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -403,12 +410,13 @@ td p {
 }
 .editor-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(350px, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 28px;
   align-items: start;
 }
 .editor-panel,
 .preview-panel {
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: white;
@@ -419,6 +427,11 @@ td p {
   padding: 0;
   margin: 0;
   min-width: 0;
+}
+.editor-panel legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 .section-label {
   display: flex;
@@ -502,6 +515,11 @@ td p {
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
+.article-preview section a {
+  display: inline-block;
+  min-height: 44px;
+  padding: 8px 0;
+}
 .markdown {
   font-family: Georgia, serif;
   line-height: 1.85;
@@ -559,6 +577,7 @@ td p {
   padding: 7px 0;
 }
 .checkbox input {
+  flex-shrink: 0;
   width: 15px;
   height: 15px;
   margin: 0;
@@ -605,21 +624,31 @@ td p {
   font-size: 11px;
 }
 .savebar {
-  position: fixed;
+  position: sticky;
   bottom: 0;
-  left: 224px;
-  right: 0;
-  padding: 16px 38px;
+  padding: 16px;
   background: #fffffff5;
   border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   z-index: 2;
 }
 .savebar button {
-  margin-left: 7px;
+  margin: 0;
+}
+.savebar > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.savebar > span {
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .modal-backdrop {
   position: fixed;
@@ -634,12 +663,17 @@ td p {
   border-radius: 10px;
   padding: 30px;
   width: min(450px, 90vw);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
   box-shadow: 0 15px 80px #0002;
 }
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
   margin-top: 25px;
 }
 @media (max-width: 1050px) {
@@ -649,9 +683,6 @@ td p {
   .main {
     margin-left: 190px;
     width: calc(100% - 190px);
-  }
-  .savebar {
-    left: 190px;
   }
   .content {
     padding: 25px 22px 100px;
@@ -680,7 +711,6 @@ td p {
     width: auto;
   }
   .sidebar .nav-caption,
-  .account,
   .sidebar .brand small {
     display: none;
   }
@@ -705,12 +735,12 @@ td p {
     align-items: flex-start;
   }
   .savebar {
-    left: 0;
-    padding: 12px;
+    position: static;
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
     flex-wrap: wrap;
   }
   .savebar > span {
-    display: none;
+    display: block;
   }
   .editor-panel,
   .preview-panel {
@@ -721,6 +751,198 @@ td p {
   }
   .page-heading h1 {
     font-size: 25px;
+  }
+}
+
+/* Allow long editorial content to shrink inside flex/grid tracks. */
+.content,
+.page-heading > *,
+.article-preview,
+.recap-detail,
+.recap-queue,
+.recap-review,
+.recap-preview,
+.recap-facts > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.inline-form input {
+  flex: 1 1 160px;
+}
+.source-actions {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.source-actions button,
+button svg {
+  flex-shrink: 0;
+}
+.review-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.review-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--accent);
+  background: white;
+}
+a:focus-visible,
+.table-wrap:focus-visible {
+  outline: 2px solid #329270;
+  outline-offset: 2px;
+}
+#article-content,
+#reader-preview,
+#article-actions {
+  scroll-margin-top: 16px;
+}
+.pagination {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.pagination > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pagination button {
+  margin: 0;
+}
+.table-wrap table {
+  min-width: 600px;
+}
+.table-wrap td {
+  overflow-wrap: anywhere;
+}
+.record-table {
+  table-layout: fixed;
+}
+.record-table th:first-child {
+  width: 48%;
+}
+.title-link {
+  justify-content: flex-start;
+}
+
+@media (max-width: 700px) {
+  .sidebar {
+    padding: max(16px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right)) 16px
+      max(16px, env(safe-area-inset-left));
+  }
+  .account {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+  }
+  .account p {
+    margin: 0;
+    flex: 1 1 100%;
+  }
+  .account button {
+    margin: 0 0 0 auto;
+  }
+  .topbar {
+    height: auto;
+    min-height: 60px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .content {
+    padding: 24px max(16px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+  .page-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .filters select {
+    flex: 1 1 130px;
+    width: auto;
+  }
+  input,
+  textarea,
+  select,
+  .search input,
+  .filters select,
+  .markdown-input,
+  .recap-review input:not([type="checkbox"]),
+  .recap-review textarea {
+    font-size: 16px;
+  }
+  .checkbox {
+    min-height: 44px;
+  }
+  .selected-items button {
+    padding: 8px;
+  }
+  .savebar > div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .savebar button {
+    flex: 1 1 120px;
+  }
+  .modal {
+    padding: 20px;
+    max-height: calc(
+      100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+    );
+  }
+  .modal-actions button {
+    flex: 1 1 140px;
+  }
+  .login-card {
+    padding: 24px;
+    margin: 16px 0;
+  }
+  /* Preserve semantic tables while giving each editorial record a readable width. */
+  .record-table {
+    min-width: 0 !important;
+  }
+  .record-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .record-table tbody,
+  .record-table tr,
+  .record-table td {
+    display: block;
+    width: 100%;
+  }
+  .record-table tr {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .record-table tr:last-child {
+    border: 0;
+  }
+  .record-table td {
+    padding: 5px 0;
+    border: 0;
+  }
+  .record-table td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .record-table .title-link {
+    width: 100%;
   }
 }
 
@@ -842,6 +1064,7 @@ dialog.modal::backdrop {
   white-space: nowrap;
 }
 .recap-preview pre {
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
   font: inherit;
   line-height: 1.55;
@@ -855,6 +1078,9 @@ dialog.modal::backdrop {
   .recap-queue {
     display: flex;
     overflow-x: auto;
+  }
+  .recap-queue button {
+    flex: 0 0 220px;
   }
   .recap-facts,
   .recap-fields {

@@ -7,3 +7,6 @@ coverage/
 .DS_Store
 .env*
 .vercel/
+
+/test-results/
+/playwright-report/

@@ -41,6 +41,11 @@ export function ArticleEditor({
     null,
   );
   const dialog = useRef<HTMLDialogElement>(null);
+  const errorTarget = useRef<HTMLDivElement>(null);
+  const pending = useRef(false);
+  useEffect(() => {
+    if (error) errorTarget.current?.focus();
+  }, [error]);
   useEffect(() => {
     if (confirmation) dialog.current?.showModal();
   }, [confirmation]);
@@ -55,7 +60,8 @@ export function ArticleEditor({
     )
     .slice(0, 30);
   async function upload(selected: File | undefined) {
-    if (!selected) return;
+    if (!selected || pending.current) return;
+    pending.current = true;
     setBusy(true);
     setError("");
     try {
@@ -111,10 +117,12 @@ export function ArticleEditor({
     } catch (reason) {
       setError(errorMessage(reason));
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
   function requestSave(status: Article["status"]) {
+    if (pending.current || busy || confirmation) return;
     setError("");
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(article.slug)) {
       setError("Add a URL slug using lowercase letters, numbers and hyphens.");
@@ -141,6 +149,8 @@ export function ArticleEditor({
     else void save(status);
   }
   async function save(status: Article["status"]) {
+    if (pending.current) return;
+    pending.current = true;
     setBusy(true);
     setError("");
     setConfirmation(null);
@@ -161,6 +171,7 @@ export function ArticleEditor({
     } catch (reason) {
       setError(errorMessage(reason));
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
@@ -185,12 +196,17 @@ export function ArticleEditor({
         <span className={`badge ${article.status}`}>{article.status}</span>
       </div>
       {error && (
-        <div role="alert" className="error">
+        <div ref={errorTarget} tabIndex={-1} role="alert" className="error">
           {error}
         </div>
       )}
+      <nav className="review-links" aria-label="Article review sections">
+        <a href="#article-content">Content & sources</a>
+        <a href="#reader-preview">Reader preview</a>
+        {writable && <a href="#article-actions">Review actions</a>}
+      </nav>
       <div className="editor-grid">
-        <section className="editor-panel">
+        <section className="editor-panel" id="article-content" aria-busy={busy}>
           <fieldset disabled={!writable || busy}>
             {article.recap_period && (
               <>
@@ -323,30 +339,31 @@ export function ArticleEditor({
                 onChange={(e) => patch({ summary: e.target.value })}
               />
             </label>
-            <label>
-              Categories
-              <select
-                multiple
-                value={article.category_ids}
-                onChange={(e) =>
-                  patch({
-                    category_ids: Array.from(
-                      e.target.selectedOptions,
-                      (option) => option.value,
-                    ),
-                  })
-                }
+            <fieldset>
+              <legend>Categories</legend>
+              <div
+                className="security-results"
+                role="group"
+                aria-label="Categories"
               >
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <label className="checkbox" key={c.id}>
+                    <input
+                      type="checkbox"
+                      checked={article.category_ids.includes(c.id)}
+                      onChange={(e) =>
+                        patch({
+                          category_ids: e.target.checked
+                            ? [...article.category_ids, c.id]
+                            : article.category_ids.filter((id) => id !== c.id),
+                        })
+                      }
+                    />
                     {c.name}
-                  </option>
+                  </label>
                 ))}
-              </select>
-              <span className="small muted">
-                Use Command or Control to select multiple categories.
-              </span>
-            </label>
+              </div>
+            </fieldset>
             <div className="section-label">Related securities</div>
             <label>
               Search securities
@@ -505,8 +522,11 @@ export function ArticleEditor({
               <button
                 type="button"
                 onClick={async () => {
+                  if (pending.current) return;
                   const name = window.prompt("New source name");
                   if (!name?.trim()) return;
+                  pending.current = true;
+                  setBusy(true);
                   try {
                     const result = await addSource(name);
                     patch({
@@ -522,6 +542,9 @@ export function ArticleEditor({
                     });
                   } catch (reason) {
                     setError(errorMessage(reason));
+                  } finally {
+                    pending.current = false;
+                    setBusy(false);
                   }
                 }}
               >
@@ -546,7 +569,7 @@ export function ArticleEditor({
             )}
           </fieldset>
         </section>
-        <section className="preview-panel">
+        <section className="preview-panel" id="reader-preview">
           <div className="section-label">
             <Eye size={16} />
             Reader preview
@@ -560,9 +583,11 @@ export function ArticleEditor({
         </section>
       </div>
       {writable && (
-        <div className="savebar">
-          <span className="muted small">
-            {file || "Markdown article"} · Changes are not saved automatically
+        <div className="savebar" id="article-actions" aria-busy={busy}>
+          <span className="muted small" role="status">
+            {busy
+              ? "Saving…"
+              : `${file || "Markdown article"} · Changes are not saved automatically`}
           </span>
           <div>
             <button disabled={busy} onClick={() => requestSave("archived")}>
@@ -611,7 +636,11 @@ export function ArticleEditor({
             <button autoFocus onClick={() => setConfirmation(null)}>
               Cancel
             </button>
-            <button className="primary" onClick={() => void save(confirmation)}>
+            <button
+              className="primary"
+              disabled={busy}
+              onClick={() => void save(confirmation)}
+            >
               Confirm{" "}
               {confirmation === "published"
                 ? "publication"

@@ -88,6 +88,19 @@ npm run typecheck
 npm run build
 ```
 
+For responsive UI verification (synthetic loopback API fixtures, no real accounts
+or database writes):
+
+```sh
+npx playwright install chromium webkit
+npm run test:ui
+```
+
+The UI runner starts its own local server on port 3100. It covers 320, 375, 390,
+430, 844 (landscape) and 1440px, long Markdown/URLs, editorial actions, confirmation
+dialogs, error/pending/empty states and market recaps. See
+[mobile review evidence](tests/evidence/README.md) for screenshots and limitations.
+
 From the backend root, `supabase db reset --local` replays migrations and
 `deno task test:db` runs pgTAP tests. Never point tests at production. The migration
 is additive and requires no market-data backfill. Deploy it before the portal and

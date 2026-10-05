@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "node tests/local-api.mjs",
-    "format:check": "prettier --check src tests *.json *.mjs *.ts"
+    "format:check": "prettier --check src tests *.json *.mjs *.ts",
+    "test:ui": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +31,7 @@
     "yaml": "2.9.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.6.2",
     "@types/react": "19.3.0",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "@/lib/errors";
 import { supabase } from "@/lib/supabase";
 
@@ -95,6 +95,7 @@ export function MarketRecaps({ writable }: { writable: boolean }) {
   const [coverageConfirmed, setCoverageConfirmed] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [checkedAt, setCheckedAt] = useState(0);
@@ -163,6 +164,8 @@ export function MarketRecaps({ writable }: { writable: boolean }) {
   }
 
   async function act(action: () => Promise<void>) {
+    if (pending.current) return;
+    pending.current = true;
     setBusy(true);
     setError("");
     setNotice("");
@@ -172,6 +175,7 @@ export function MarketRecaps({ writable }: { writable: boolean }) {
       setError(errorMessage(reason));
       await reload().catch(() => undefined);
     } finally {
+      pending.current = false;
       setBusy(false);
     }
   }
@@ -427,7 +431,12 @@ export function MarketRecaps({ writable }: { writable: boolean }) {
               · SHA-256 {edition.source_sha256} ·{" "}
               {edition.source_raw_object_path}
             </p>
-            <div className="table-wrap">
+            <div
+              className="table-wrap"
+              tabIndex={0}
+              role="region"
+              aria-label="Dados do recap; deslize para ver todas as colunas"
+            >
               <table>
                 <thead>
                   <tr>

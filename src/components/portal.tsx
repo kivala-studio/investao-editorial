@@ -299,7 +299,7 @@ export function Portal() {
           <small>EDITORIAL</small>
         </div>
         <p className="nav-caption">WORKSPACE</p>
-        <nav>
+        <nav aria-label="Workspace">
           <button
             aria-current={screen === "articles" ? "page" : undefined}
             onClick={() => void navigate("articles")}
@@ -443,21 +443,26 @@ export function Portal() {
                   ))}
                 </select>
               </div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Status</th>
-                      <th>Author</th>
-                      <th>Updated</th>
-                      <th>Published</th>
+              <div
+                className="table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Editorial records"
+              >
+                <table className="record-table" role="table">
+                  <thead role="rowgroup">
+                    <tr role="row">
+                      <th role="columnheader">Title</th>
+                      <th role="columnheader">Status</th>
+                      <th role="columnheader">Author</th>
+                      <th role="columnheader">Updated</th>
+                      <th role="columnheader">Published</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody role="rowgroup">
                     {articles.map((row) => (
-                      <tr key={row.id}>
-                        <td>
+                      <tr role="row" key={row.id}>
+                        <td role="cell" data-label="Title">
                           <button
                             className="title-link"
                             onClick={() => {
@@ -481,22 +486,26 @@ export function Portal() {
                           </button>
                           <p className="small muted">/{row.slug}</p>
                         </td>
-                        <td>
+                        <td role="cell" data-label="Status">
                           <span className={`badge ${row.status}`}>
                             {row.status}
                           </span>
                         </td>
-                        <td title={row.author_id}>
+                        <td
+                          role="cell"
+                          data-label="Author"
+                          title={row.author_id}
+                        >
                           {row.author_id === identity.id
                             ? "You"
                             : row.author_id?.slice(0, 8) || "Deleted user"}
                         </td>
-                        <td>
+                        <td role="cell" data-label="Updated">
                           {row.updated_at
                             ? new Date(row.updated_at).toLocaleDateString()
                             : "—"}
                         </td>
-                        <td>
+                        <td role="cell" data-label="Published">
                           {row.published_at
                             ? new Date(row.published_at).toLocaleDateString()
                             : "—"}
@@ -583,11 +592,15 @@ export function Portal() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     const form = e.currentTarget;
+                    if (busy) return;
+                    setBusy(true);
                     try {
                       await addSource(String(new FormData(form).get("name")));
                       form.reset();
                     } catch (reason) {
                       fail(reason);
+                    } finally {
+                      setBusy(false);
                     }
                   }}
                 >
@@ -598,22 +611,31 @@ export function Portal() {
                     required
                     maxLength={200}
                   />
-                  <button className="primary">Add source</button>
+                  <button className="primary" disabled={busy}>
+                    {busy ? "Saving…" : "Add source"}
+                  </button>
                 </form>
               )}
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Actions</th>
+              <div
+                className="table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Editorial records"
+              >
+                <table className="record-table" role="table">
+                  <thead role="rowgroup">
+                    <tr role="row">
+                      <th role="columnheader">Name</th>
+                      <th role="columnheader">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody role="rowgroup">
                     {sources.map((source) => (
-                      <tr key={source.id}>
-                        <td>{source.name}</td>
-                        <td>
+                      <tr role="row" key={source.id}>
+                        <td role="cell" data-label="Name">
+                          {source.name}
+                        </td>
+                        <td role="cell" data-label="Actions">
                           {writable && (
                             <button
                               onClick={async () => {
@@ -691,18 +713,23 @@ export function Portal() {
                 </select>
                 <button className="primary">Grant access</button>
               </form>
-              <div className="table-wrap">
+              <div
+                className="table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Editorial records"
+              >
                 <table>
-                  <thead>
-                    <tr>
-                      <th>User ID</th>
-                      <th>Role</th>
-                      <th>Access</th>
+                  <thead role="rowgroup">
+                    <tr role="row">
+                      <th role="columnheader">User ID</th>
+                      <th role="columnheader">Role</th>
+                      <th role="columnheader">Access</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody role="rowgroup">
                     {members.map((member) => (
-                      <tr key={member.user_id}>
+                      <tr role="row" key={member.user_id}>
                         <td>
                           {member.user_id}
                           {member.user_id === identity.id ? " (you)" : ""}
@@ -762,19 +789,24 @@ export function Portal() {
                   <p className="muted">The latest 100 editorial events.</p>
                 </div>
               </div>
-              <div className="table-wrap">
+              <div
+                className="table-wrap"
+                tabIndex={0}
+                role="region"
+                aria-label="Editorial records"
+              >
                 <table>
-                  <thead>
-                    <tr>
-                      <th>Action</th>
-                      <th>Article</th>
-                      <th>Actor</th>
-                      <th>Time</th>
+                  <thead role="rowgroup">
+                    <tr role="row">
+                      <th role="columnheader">Action</th>
+                      <th role="columnheader">Article</th>
+                      <th role="columnheader">Actor</th>
+                      <th role="columnheader">Time</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody role="rowgroup">
                     {audit.map((event) => (
-                      <tr key={event.id}>
+                      <tr role="row" key={event.id}>
                         <td>{event.action.replaceAll("_", " ")}</td>
                         <td>{event.article_id}</td>
                         <td>{event.actor_id || "Deleted user"}</td>

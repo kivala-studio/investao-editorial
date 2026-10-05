@@ -73,19 +73,19 @@ export function PeriodRecaps({
         </p>
       )}
       <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Relatório histórico</th>
-              <th>Período</th>
-              <th>Base dos dados</th>
-              <th>Estado</th>
+        <table className="record-table" role="table">
+          <thead role="rowgroup">
+            <tr role="row">
+              <th role="columnheader">Relatório histórico</th>
+              <th role="columnheader">Período</th>
+              <th role="columnheader">Base dos dados</th>
+              <th role="columnheader">Estado</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
+              <tr role="row" key={row.id}>
+                <td role="cell" data-label="Relatório histórico">
                   <button
                     className="title-link"
                     onClick={() =>
@@ -107,11 +107,13 @@ export function PeriodRecaps({
                     {row.title || "Sem título"}
                   </button>
                 </td>
-                <td>
+                <td role="cell" data-label="Período">
                   {row.recap_period} · {row.period_start} a {row.period_end}
                 </td>
-                <td>{periodBasis(row)}</td>
-                <td>
+                <td role="cell" data-label="Base dos dados">
+                  {periodBasis(row)}
+                </td>
+                <td role="cell" data-label="Estado">
                   <span className={`badge ${row.status}`}>{row.status}</span>
                 </td>
               </tr>

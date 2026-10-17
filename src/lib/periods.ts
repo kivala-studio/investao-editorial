@@ -1,8 +1,18 @@
 import type { Article } from "./types";
+
+export function luandaDate(now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Luanda",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 export function periodErrors(
   article: Article,
   status: Article["status"],
-  today = new Date().toISOString().slice(0, 10),
+  today = luandaDate(),
 ): string[] {
   if (!article.recap_period) return [];
   const {
@@ -39,8 +49,17 @@ export function periodErrors(
     errors.push("Escolha uma semana, mês ou ano civil completo.");
   if (session && (session < start! || session > end!))
     errors.push("A sessão de referência deve pertencer ao período.");
-  if (status === "published" && end! >= today)
+  // Keep the civil week (Monday–Sunday); trading-week publication opens Saturday.
+  const completedThrough = new Date(end!);
+  if (article.recap_period === "weekly")
+    completedThrough.setUTCDate(completedThrough.getUTCDate() - 2);
+  if (
+    status === "published" &&
+    completedThrough.toISOString().slice(0, 10) >= today
+  )
     errors.push("Só é possível publicar períodos concluídos.");
+  if (status === "published" && session && session > today)
+    errors.push("Não é possível publicar uma sessão de referência futura.");
   return errors;
 }
 

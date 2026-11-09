@@ -254,6 +254,12 @@ export function MarketRecaps({ writable }: { writable: boolean }) {
 
   async function publish() {
     if (!selected || !edition || !preview) return;
+    if (
+      !window.confirm(
+        "Publicar esta versão e enviar a notificação aos subscritores?",
+      )
+    )
+      return;
     await act(async () => {
       let articleRevision: number | null = null;
       if (selected.article_id) {

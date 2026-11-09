@@ -32,12 +32,16 @@ type Row = Article & {
   news_article_securities: { security_id: string }[];
 };
 type Screen = "articles" | "edit" | "recaps" | "sources" | "users" | "audit";
+type Gate =
+  | { kind: "enrol"; factorId: string; qr: string; secret: string }
+  | { kind: "challenge"; factorId: string };
 export function Portal() {
   const [identity, setIdentity] = useState<{
     id: string;
     email: string;
     role: Role;
   } | null>(null);
+  const [gate, setGate] = useState<Gate | null>(null);
   const [ready, setReady] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -74,6 +78,7 @@ export function Portal() {
       } = await db.auth.getUser();
       if (!user) {
         setIdentity(null);
+        setGate(null);
         return;
       }
       if (error) throw error;
@@ -91,6 +96,43 @@ export function Portal() {
         await db.auth.signOut();
         return;
       }
+      // Editorial data opens only after a verified second factor (aal2).
+      const { data: level, error: levelError } =
+        await db.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (levelError) throw levelError;
+      if (level.currentLevel !== "aal2") {
+        setIdentity(null);
+        const { data: factors, error: factorError } =
+          await db.auth.mfa.listFactors();
+        if (factorError) throw factorError;
+        const verified = factors.totp[0];
+        if (verified) {
+          setGate({ kind: "challenge", factorId: verified.id });
+          return;
+        }
+        // An abandoned enrolment leaves an unverified factor; replace it.
+        for (const factor of factors.all.filter(
+          (factor) => factor.status === "unverified",
+        )) {
+          const { error } = await db.auth.mfa.unenroll({
+            factorId: factor.id,
+          });
+          if (error) throw error;
+        }
+        const { data: enrolled, error: enrolError } = await db.auth.mfa.enroll({
+          factorType: "totp",
+          issuer: "invest.ao editorial",
+        });
+        if (enrolError) throw enrolError;
+        setGate({
+          kind: "enrol",
+          factorId: enrolled.id,
+          qr: enrolled.totp.qr_code,
+          secret: enrolled.totp.secret,
+        });
+        return;
+      }
+      setGate(null);
       setIdentity({
         id: user.id,
         email: user.email ?? user.id,
@@ -106,6 +148,17 @@ export function Portal() {
     const timer = setTimeout(() => void refreshIdentity(), 0);
     return () => clearTimeout(timer);
   }, [refreshIdentity]);
+  useEffect(() => {
+    // Follow sign-outs from expiry or another tab. Token refreshes keep the current screen.
+    const {
+      data: { subscription },
+    } = supabase().auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_OUT") return;
+      setIdentity(null);
+      setGate(null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   useEffect(() => {
     if (!identity) return;
     let active = true;
@@ -217,12 +270,32 @@ export function Portal() {
       setBusy(false);
     }
   }
+  async function verify(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!gate) return;
+    setBusy(true);
+    setError("");
+    const code = String(new FormData(event.currentTarget).get("code")).trim();
+    try {
+      const { error } = await supabase().auth.mfa.challengeAndVerify({
+        factorId: gate.factorId,
+        code,
+      });
+      if (error) throw error;
+      await refreshIdentity();
+    } catch (reason) {
+      fail(reason);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function logout() {
     setBusy(true);
     try {
       const { error } = await supabase().auth.signOut();
       if (error) throw error;
       setIdentity(null);
+      setGate(null);
       setArticles([]);
       setArticle(emptyArticle());
       setEditorVersion((version) => version + 1);
@@ -252,10 +325,54 @@ export function Portal() {
         <p>Opening editorial workspace…</p>
       </main>
     );
+  if (!identity && gate)
+    return (
+      <main className="login">
+        <form key={gate.factorId} onSubmit={verify} className="login-card">
+          <div className="brand">
+            invest<span>.ao</span>
+            <small>EDITORIAL</small>
+          </div>
+          <h1>
+            {gate.kind === "enrol" ? "Set up two-step sign-in" : "Enter code"}
+          </h1>
+          {error && (
+            <p role="alert" className="error">
+              {error}
+            </p>
+          )}
+          {gate.kind === "enrol" && (
+            <div className="factor-setup">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={gate.qr} alt="Authenticator QR code" />
+              <code aria-label="Setup key">{gate.secret}</code>
+            </div>
+          )}
+          <label>
+            Code
+            <input
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              autoFocus
+            />
+          </label>
+          <button className="primary" disabled={busy}>
+            {busy ? "Verifying…" : "Verify"} <ArrowUpRight size={16} />
+          </button>
+          <button type="button" disabled={busy} onClick={() => void logout()}>
+            Sign out
+          </button>
+        </form>
+      </main>
+    );
   if (!identity)
     return (
       <main className="login">
-        <form onSubmit={login} className="login-card">
+        <form key="password" onSubmit={login} className="login-card">
           <div className="brand">
             invest<span>.ao</span>
             <small>EDITORIAL</small>

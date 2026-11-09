@@ -387,6 +387,22 @@ td p {
   width: 100%;
   margin: 0 0 20px;
 }
+.factor-setup {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.factor-setup img {
+  width: 180px;
+  height: 180px;
+}
+.factor-setup code {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
 .error {
   color: #902d24;
   background: #fff0ec;

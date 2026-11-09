@@ -1,6 +1,6 @@
 // Integration checks exclusively against the CLI's local Supabase instance.
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -34,6 +34,84 @@ async function request(path, token = key, method = "GET", body) {
   const text = await response.text();
   return { status: response.status, data: text ? JSON.parse(text) : null };
 }
+// RFC 6238 code for a base32 TOTP secret.
+function totp(secret, at = Date.now()) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const char of secret.replace(/=+$/, "").toUpperCase())
+    bits += alphabet.indexOf(char).toString(2).padStart(5, "0");
+  const bytes = Buffer.from(
+    bits.match(/.{8}/g).map((byte) => parseInt(byte, 2)),
+  );
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 30000)));
+  const digest = createHmac("sha1", bytes).update(counter).digest();
+  const offset = digest[digest.length - 1] & 15;
+  return String((digest.readUInt32BE(offset) & 0x7fffffff) % 1e6).padStart(
+    6,
+    "0",
+  );
+}
+function setRequireAal2(enabled) {
+  execFileSync(
+    "supabase",
+    [
+      "db",
+      "query",
+      "--local",
+      `update editorial_private.control set require_aal2 = ${enabled}`,
+    ],
+    { cwd: resolve(backendDirectory), stdio: "ignore" },
+  );
+}
+// Enrol, challenge and verify over REST; with the flag on only the aal2 session keeps its role.
+async function checkSecondFactor(user) {
+  const factor = await request("/auth/v1/factors", user.token, "POST", {
+    factor_type: "totp",
+    issuer: "invest.ao editorial",
+  });
+  assert.equal(factor.status, 200, "TOTP enrolment");
+  const challenge = await request(
+    `/auth/v1/factors/${factor.data.id}/challenge`,
+    user.token,
+    "POST",
+    {},
+  );
+  assert.equal(challenge.status, 200, "TOTP challenge");
+  const verified = await request(
+    `/auth/v1/factors/${factor.data.id}/verify`,
+    user.token,
+    "POST",
+    { challenge_id: challenge.data.id, code: totp(factor.data.totp.secret) },
+  );
+  assert.equal(verified.status, 200, "TOTP verification");
+  const strong = verified.data.access_token;
+  const role = (token) =>
+    request("/rest/v1/rpc/current_editorial_role", token, "POST", {});
+  const write = (token, slug) =>
+    request("/rest/v1/rpc/save_news_article", token, "POST", {
+      document: { slug, title: "Second factor" },
+      expected_revision: null,
+    });
+  setRequireAal2(true);
+  try {
+    assert.equal((await role(user.token)).data, null, "aal1 has no role");
+    assert.equal(
+      (await write(user.token, `aal1-${tag}`)).status,
+      403,
+      "aal1 cannot write with the flag on",
+    );
+    assert.equal((await role(strong)).data, user.role, "aal2 keeps the role");
+    assert.equal(
+      (await write(strong, `aal2-${tag}`)).status,
+      200,
+      "aal2 writes with the flag on",
+    );
+  } finally {
+    setRequireAal2(false);
+  }
+  assert.equal((await role(user.token)).data, user.role, "flag off restores");
+}
 const tag = randomUUID();
 const users = [];
 try {
@@ -66,6 +144,7 @@ try {
     users.at(-1).token = login.data.access_token;
   }
   const [admin, editor, viewer, mobile] = users;
+  await checkSecondFactor(admin);
   const source = await request("/rest/v1/news_sources", editor.token, "POST", {
     name: `Test ${tag}`,
   });
@@ -404,7 +483,7 @@ try {
   assert.equal(audit.status, 200);
   assert(audit.data.some((e) => e.action === "article_archived"));
   console.log(
-    "PASS: REST draft visibility, role matrix, publication, source requirement, stale writes, archive, revocation and audits",
+    "PASS: second factor gate, REST draft visibility, role matrix, publication, source requirement, stale writes, archive, revocation and audits",
   );
 } finally {
   // Author deletion must preserve article history without blocking account deletion.

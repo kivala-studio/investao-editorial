@@ -1,145 +1,77 @@
-# Invest.ao Editorial
+# invest.ao editorial
 
-The standalone Next.js editorial application for Invest.ao. Editors write in Notion
-(or another Markdown editor), export `.md`, review the import, and publish to the
-existing Supabase project. The database stores canonical Markdown; the iOS reader
-never downloads a Storage object.
+Internal portal for writing and publishing the news articles and market recaps that the invest.ao iOS app and website read from Supabase. It is a browser-only client of the invest.ao Supabase project: it has no server routes, no database of its own and no privileged credentials (`src/lib/supabase.ts`, `src/app/`).
 
-## Run
+Documentation index: [docs/README.md](docs/README.md).
 
-Use Node 22 or newer. From the repository root:
+## Stack
+
+Versions are pinned exactly in `package.json`.
+
+| Package | Version |
+| --- | --- |
+| next | 16.3.5 |
+| react, react-dom | 19.3.0 |
+| @supabase/supabase-js | 2.116.0 |
+| react-markdown | 10.1.0 |
+| unified / remark-parse / remark-stringify | 11.0.5 / 11.0.0 / 11.0.0 |
+| unist-util-visit | 5.1.0 |
+| yaml | 2.9.1 |
+| lucide-react | 1.47.0 |
+| tailwindcss, @tailwindcss/postcss | 4.3.3 |
+| typescript | 6.0.3 |
+| vitest | 5.0.1 |
+| @playwright/test | 1.63.0 |
+| eslint, eslint-config-next | 9.39.5, 16.3.5 |
+| prettier | 3.9.8 |
+
+Node: the CI workflow uses Node 22 (`.github/workflows/verify.yml`); `next` 16.3.5 requires Node 20.9.0 or newer (`package-lock.json`). `package.json` declares no `engines`.
+
+## Layout
+
+```
+src/app/            layout, the single page, global CSS
+src/components/     portal.tsx (auth, navigation, lists), article-editor.tsx,
+                    period-recaps.tsx, market-recaps.tsx, preview.tsx
+src/lib/            markdown.ts (import, validation, normalisation), periods.ts
+                    (period rules), supabase.ts (client), types.ts, errors.ts
+tests/              local-api.mjs (integration), ui/mobile.spec.ts (Playwright),
+                    fixtures/august-2026.md
+.github/workflows/  verify.yml
+```
+
+## Setup
 
 ```sh
 npm ci
 ```
 
-Create an ignored `.env.local` before starting the app and set
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from the
-Supabase project dashboard. These are public client settings. Do not add a
-service-role key or database password. Then run `npm run dev`. Run the
-backend migrations before using the portal. Hosting should use the repository root (`.`) as its
-root directory, `npm run build` as its build, and `npm start` for a Node deployment.
-The application has no public signup or privileged server endpoints.
-
-## Deploy manually
-
-Deploy this repository independently of the backend. On Vercel, import the GitHub
-repository as a Next.js project with its root directory set to `.`. Set
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the
-Vercel project's Production environment before deploying. Next.js embeds these
-public values in the browser bundle during the build. No administrative
-credentials are required by the host.
-
-Database migrations and RLS tests remain in
-[kivala-studio/investao-functions](https://github.com/kivala-studio/investao-functions).
-The editorial migration is `20260919162150_editorial_news.sql` and is already applied
-to production. This repository does not deploy the backend or the iOS app.
-
-## Access and initial administrator
-
-The designated initial administrator is `main@invest.ao`. Roles are database-managed;
-the email address is not a client-side authorization bypass.
-
-Use existing Supabase Auth accounts. A backend operator bootstraps the first admin
-once, replacing the placeholder UUID with a verified existing account ID:
-
-```sql
-insert into public.editorial_members(user_id, role)
-values ('EXISTING-USER-UUID', 'admin');
-```
-
-Admins can then grant, change, or revoke editorial membership by existing user ID
-in **Users & roles**. Editors never need dashboard access. Mobile account signup
-remains unchanged; creating an ordinary mobile account does not grant editorial
-access. Editorial membership is read from the database on every request so role
-revocation takes effect without waiting for an access token refresh. `viewer` can
-read drafts, `editor` can publish, and `admin` can also manage access and read audits.
-New Auth accounts are provisioned through the existing account flow; this portal
-does not offer invitations or create separate user records.
-
-## Workflow
-
-1. Upload a UTF-8 `.md` file (maximum 256 KB).
-2. Optional YAML fields: `title`, `summary`, `category`, `securities` (symbols),
-   `sources` (objects with `name`, `url`, and boolean `primary`).
-3. Review metadata, resolve unknown category/security/source names, and check the
-   reader preview. Source URLs must use HTTP or HTTPS. Prefer primary sources.
-4. Save draft or publish. Publication requires title, summary, body, and a source.
-5. Open an article to replace Markdown. Replacement stays local until saved;
-   live changes, unpublication, and archiving require confirmation.
-
-Supported Markdown: headings, paragraphs, bold, italic, HTTP(S) links, single-level
-ordered and unordered lists, blockquotes, and horizontal rules. HTML, images, code,
-reference links, and nested lists are flagged and must be removed before publishing.
-The preview does not execute HTML. The native reader removes unsafe link schemes.
-Original upload files are not retained; optional Storage retention is deferred.
-
-Saves use a single RLS-protected transaction and a revision precondition. A stale
-editor must reload instead of overwriting a newer save. Deferred database constraints
-also prevent direct API writes from publishing without a source or deleting the last
-source of a live article. Relationship changes update revision and audit history.
-
-## Verify
+Create `.env.local` (ignored by `.gitignore`) with the two variables in [docs/configuration.md](docs/configuration.md), then:
 
 ```sh
-npm test
-npm run lint
-npm run typecheck
-npm run build
+npm run dev
 ```
 
-For responsive UI verification (synthetic loopback API fixtures, no real accounts
-or database writes):
+The portal needs a Supabase project that has the invest.ao backend migrations applied (repository `kivala-studio/investao-functions`). See [docs/backend-contract.md](docs/backend-contract.md).
 
-```sh
-npx playwright install chromium webkit
-npm run test:ui
-```
+## Commands
 
-The UI runner starts its own local server on port 3100. It covers 320, 375, 390,
-430, 844 (landscape) and 1440px, long Markdown/URLs, editorial actions, confirmation
-dialogs, error/pending/empty states and market recaps. See
-[mobile review evidence](tests/evidence/README.md) for screenshots and limitations.
+From `package.json`:
 
-From the backend root, `supabase db reset --local` replays migrations and
-`deno task test:db` runs pgTAP tests. Never point tests at production. The migration
-is additive and requires no market-data backfill. Deploy it before the portal and
-iOS reader; until then the mobile news section displays a retry state.
+| Command | Runs |
+| --- | --- |
+| `npm run dev` | `next dev` |
+| `npm run build` | `next build` |
+| `npm start` | `next start` |
+| `npm test` | `vitest run` (unit tests in `src/lib`) |
+| `npm run lint` | `eslint .` |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run format:check` | `prettier --check src tests *.json *.mjs *.ts` |
+| `npm run test:integration` | `node tests/local-api.mjs` (needs a local Supabase stack) |
+| `npm run test:ui` | `playwright test` |
 
-For local REST integration tests, start the backend's local Supabase stack and run:
+Details: [docs/testing.md](docs/testing.md).
 
-```sh
-INVESTAO_BACKEND_DIR=/absolute/path/to/investao-functions npm run test:integration
-```
+## Deployment
 
-If the variable is omitted, tests look for a sibling `investao-functions` checkout.
-They obtain credentials from its local CLI status and reject non-loopback endpoints.
-They create and remove local test accounts and never use production credentials.
-
-## Period market recaps
-
-Market recaps now includes **Criar recap por período** alongside the existing
-verified daily sessions. Select weekly (Monday–Sunday), monthly, or annual civil
-periods, set start/end and optionally a source-supported reference-session date within the period, then write
-or import Markdown and attach existing sources. Save draft first; publication
-requires the existing source/content checks and an explicit confirmation.
-Only completed periods can be published. Published period reports open read-only.
-
-Deploy backend migration `20261002120000_period_market_recaps.sql` before releasing
-this portal. It adds nullable metadata to `news_articles` without modifying existing
-articles, and reuses article RLS, audit and revision protection. A unique index
-prevents duplicate reports for the same type/start date. Historical period and
-reference-session information is included in canonical Markdown so existing
-readers display it without an app update. These reports do not enter the daily
-candidate, quote, or push-delivery pipelines.
-
-`tests/fixtures/august-2026.md` is an editorial demonstration imported from Library;
-local integration tests leave August in draft and test publication with a separate
-synthetic report. Run `INVESTAO_BACKEND_DIR=/path/to/backend npm run test:integration`
-only with a local Supabase stack containing the migration. Leave the reference session blank for aggregate source reports. They display an explicit
-aggregate-period basis without implying a trading session. A supplied reference date
-is editor supplied; it is not an assertion of verified closing prices.
-
-This correction requires backend migration `20261002123516_optional_period_reference_session.sql`
-before releasing the updated portal. Daily session recaps retain their existing verified
-trading dates.
+The repository contains no hosting configuration. What it does prove is in [docs/deployment.md](docs/deployment.md).
